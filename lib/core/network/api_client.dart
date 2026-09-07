@@ -1,5 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import '../error/exceptions.dart';
 
 class ApiClient {
@@ -33,6 +34,18 @@ class ApiClient {
 
   String? get userId => _currentUserId;
 
+  String _formatData(dynamic data) {
+    if (data == null) return 'null';
+    try {
+      if (data is Map || data is List) {
+        return const JsonEncoder.withIndent('  ').convert(data);
+      }
+      return data.toString();
+    } catch (_) {
+      return data.toString();
+    }
+  }
+
   void _setupInterceptors() {
     _dio.interceptors.clear();
 
@@ -52,32 +65,39 @@ class ApiClient {
       ),
     );
 
-    // 2. Debug Logging Interceptor
-    if (kDebugMode) {
-      _dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            debugPrint('[API REQ] ${options.method} ${options.uri}');
-            if (options.data != null) {
-              debugPrint('[API BODY] ${options.data}');
-            }
-            return handler.next(options);
-          },
-          onResponse: (response, handler) {
-            debugPrint(
-              '[API RES] ${response.statusCode} from ${response.requestOptions.uri}',
+    // 2. Comprehensive Console Logging Interceptor
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          developer.log(
+            '🌐 [API REQ] ${options.method} ${options.uri}',
+            name: 'ApiClient',
+          );
+          if (options.data != null) {
+            developer.log(
+              '📦 [API REQ DATA]:\n${_formatData(options.data)}',
+              name: 'ApiClient',
             );
-            return handler.next(response);
-          },
-          onError: (DioException e, handler) {
-            debugPrint(
-              '[API ERR] ${e.response?.statusCode}: ${e.message} at ${e.requestOptions.uri}',
-            );
-            return handler.next(e);
-          },
-        ),
-      );
-    }
+          }
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          developer.log(
+            '✅ [API RES ${response.statusCode}] ${response.requestOptions.method} ${response.requestOptions.uri}\n📄 [API RES BODY]:\n${_formatData(response.data)}',
+            name: 'ApiClient',
+          );
+          return handler.next(response);
+        },
+        onError: (DioException e, handler) {
+          developer.log(
+            '❌ [API ERR ${e.response?.statusCode ?? 'NO_STATUS'}] ${e.requestOptions.method} ${e.requestOptions.uri}\n⚠️ [API ERR MSG]: ${e.message}\n📄 [API ERR BODY]:\n${_formatData(e.response?.data)}',
+            name: 'ApiClient',
+            error: e,
+          );
+          return handler.next(e);
+        },
+      ),
+    );
 
     // 3. Error Mapping Interceptor
     _dio.interceptors.add(

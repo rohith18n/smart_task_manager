@@ -14,7 +14,9 @@ import '../widgets/task_list_app_bar.dart';
 import '../widgets/task_list_offline_banner.dart';
 
 class TaskListScreen extends StatelessWidget {
-  const TaskListScreen({super.key});
+  final TextEditingController _searchController = TextEditingController();
+
+  TaskListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +43,7 @@ class TaskListScreen extends StatelessWidget {
         body: Column(
           children: [
             const TaskListOfflineBanner(),
-            const SearchInputWidget(),
+            SearchInputWidget(controller: _searchController),
             const FilterSortBar(),
             const SizedBox(height: 4),
             Expanded(

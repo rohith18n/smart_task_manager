@@ -7,16 +7,15 @@ import '../bloc/task_event.dart';
 
 class SearchInputWidget extends StatelessWidget {
   final TextEditingController? controller;
+  final TextEditingController _internalController = TextEditingController();
+  final Debouncer _debouncer =
+      Debouncer(delay: const Duration(milliseconds: 300));
 
-  const SearchInputWidget({super.key, this.controller});
+  SearchInputWidget({super.key, this.controller});
 
   @override
   Widget build(BuildContext context) {
-    final debouncer = Debouncer(delay: const Duration(milliseconds: 300));
-    final searchController = controller ??
-        TextEditingController(
-          text: context.read<TaskBloc>().state.searchQuery,
-        );
+    final searchController = controller ?? _internalController;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -34,7 +33,7 @@ class SearchInputWidget extends StatelessWidget {
               fontSize: 15,
             ),
             onChanged: (query) {
-              debouncer.run(() {
+              _debouncer.run(() {
                 context.read<TaskBloc>().add(SearchTasksEvent(query.trim()));
               });
             },
@@ -64,7 +63,7 @@ class SearchInputWidget extends StatelessWidget {
                             : AppColors.lightTextSecondary,
                       ),
                       onPressed: () {
-                        debouncer.cancel();
+                        _debouncer.cancel();
                         searchController.clear();
                         context
                             .read<TaskBloc>()

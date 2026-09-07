@@ -60,7 +60,7 @@ class TaskMutationHandlers {
     ));
 
     try {
-      final created = await bloc.createTaskUseCase(event.task);
+      final created = await bloc.createTaskUseCase(optimisticTask);
       final finalizedList = bloc.state.allTasks.map((t) {
         return (t.id == optimisticTask.id) ? created : t;
       }).toList();

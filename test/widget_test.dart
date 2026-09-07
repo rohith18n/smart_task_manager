@@ -65,7 +65,7 @@ void main() {
           BlocProvider<AuthBloc>.value(value: mockAuthBloc),
           BlocProvider<TaskBloc>.value(value: taskBloc),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           home: TaskListScreen(),
         ),
       ),

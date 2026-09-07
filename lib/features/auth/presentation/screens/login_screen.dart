@@ -10,23 +10,24 @@ import '../widgets/auth_header_widget.dart';
 import '../widgets/login_actions_widget.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final ValueNotifier<bool> _obscureNotifier = ValueNotifier<bool>(true);
+
+  LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final formKey = GlobalKey<FormState>();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final obscureNotifier = ValueNotifier<bool>(true);
 
     void onSignIn() {
       FocusScope.of(context).unfocus();
-      if (formKey.currentState!.validate()) {
+      if (_formKey.currentState!.validate()) {
         context.read<AuthBloc>().add(
               SignInWithEmailEvent(
-                email: emailController.text.trim(),
-                password: passwordController.text,
+                email: _emailController.text.trim(),
+                password: _passwordController.text,
               ),
             );
       }
@@ -101,7 +102,7 @@ class LoginScreen extends StatelessWidget {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Form(
-                key: formKey,
+                key: _formKey,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,7 +125,7 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: emailController,
+                      controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       style: TextStyle(
@@ -161,10 +162,10 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     ValueListenableBuilder<bool>(
-                      valueListenable: obscureNotifier,
+                      valueListenable: _obscureNotifier,
                       builder: (context, isObscured, _) {
                         return TextFormField(
-                          controller: passwordController,
+                          controller: _passwordController,
                           obscureText: isObscured,
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) => onSignIn(),
@@ -186,7 +187,7 @@ class LoginScreen extends StatelessWidget {
                                 size: 20,
                               ),
                               onPressed: () {
-                                obscureNotifier.value = !isObscured;
+                                _obscureNotifier.value = !isObscured;
                               },
                             ),
                           ),

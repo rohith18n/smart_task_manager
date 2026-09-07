@@ -9,15 +9,16 @@ import '../widgets/profile_avatar_header.dart';
 import '../widgets/profile_theme_preference_card.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final ValueNotifier<String> _themeNotifier = ValueNotifier<String>('system');
+  final ValueNotifier<bool> _isInitialized = ValueNotifier<bool>(false);
+
+  ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final themeNotifier = ValueNotifier<String>('system');
-    var isInitialized = false;
 
     return Scaffold(
       backgroundColor:
@@ -57,10 +58,10 @@ class ProfileScreen extends StatelessWidget {
         builder: (context, state) {
           final profile = state.profile;
 
-          if (profile != null && !isInitialized) {
-            nameController.text = profile.name;
-            themeNotifier.value = profile.themeMode;
-            isInitialized = true;
+          if (profile != null && !_isInitialized.value) {
+            _nameController.text = profile.name;
+            _themeNotifier.value = profile.themeMode;
+            _isInitialized.value = true;
           }
 
           if (state.status == ProfileStatus.loading && profile == null) {
@@ -72,7 +73,7 @@ class ProfileScreen extends StatelessWidget {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Form(
-              key: formKey,
+              key: _formKey,
               child: Column(
                 children: [
                   ProfileAvatarHeader(profile: profile),
@@ -103,7 +104,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
-                          controller: nameController,
+                          controller: _nameController,
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.darkTextPrimary
@@ -134,12 +135,12 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   ValueListenableBuilder<String>(
-                    valueListenable: themeNotifier,
+                    valueListenable: _themeNotifier,
                     builder: (context, currentTheme, _) {
                       return ProfileThemePreferenceCard(
                         selectedTheme: currentTheme,
                         onThemeChanged: (chosen) {
-                          themeNotifier.value = chosen;
+                          _themeNotifier.value = chosen;
                           context
                               .read<ThemeCubit>()
                               .setThemeFromString(chosen);
@@ -162,18 +163,18 @@ class ProfileScreen extends StatelessWidget {
                       onPressed: state.status == ProfileStatus.loading
                           ? null
                           : () {
-                              if (formKey.currentState!.validate() &&
+                              if (_formKey.currentState!.validate() &&
                                   profile != null) {
                                 context.read<ProfileBloc>().add(
                                       UpdateProfileEvent(
                                         userId: profile.userId,
-                                        name: nameController.text.trim(),
-                                        themeMode: themeNotifier.value,
+                                        name: _nameController.text.trim(),
+                                        themeMode: _themeNotifier.value,
                                       ),
                                     );
                                 context
                                     .read<ThemeCubit>()
-                                    .setThemeFromString(themeNotifier.value);
+                                    .setThemeFromString(_themeNotifier.value);
                               }
                             },
                       child: state.status == ProfileStatus.loading

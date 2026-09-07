@@ -11,27 +11,31 @@ import '../widgets/register_actions_widget.dart';
 import '../widgets/register_password_fields.dart';
 
 class RegisterScreen extends StatelessWidget {
-  const RegisterScreen({super.key});
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+  final ValueNotifier<bool> _obscurePasswordNotifier =
+      ValueNotifier<bool>(true);
+  final ValueNotifier<bool> _obscureConfirmPasswordNotifier =
+      ValueNotifier<bool>(true);
+
+  RegisterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    final obscurePasswordNotifier = ValueNotifier<bool>(true);
-    final obscureConfirmPasswordNotifier = ValueNotifier<bool>(true);
 
     void onSignUp() {
       FocusScope.of(context).unfocus();
-      if (formKey.currentState!.validate()) {
+      if (_formKey.currentState!.validate()) {
         context.read<AuthBloc>().add(
               SignUpWithEmailEvent(
-                email: emailController.text.trim(),
-                password: passwordController.text,
-                displayName: nameController.text.trim(),
+                email: _emailController.text.trim(),
+                password: _passwordController.text,
+                displayName: _nameController.text.trim(),
               ),
             );
       }
@@ -106,7 +110,7 @@ class RegisterScreen extends StatelessWidget {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Form(
-                key: formKey,
+                key: _formKey,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,7 +133,7 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: nameController,
+                      controller: _nameController,
                       keyboardType: TextInputType.name,
                       textInputAction: TextInputAction.next,
                       style: TextStyle(
@@ -164,7 +168,7 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: emailController,
+                      controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       style: TextStyle(
@@ -190,11 +194,11 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     RegisterPasswordFields(
-                      passwordController: passwordController,
-                      confirmPasswordController: confirmPasswordController,
-                      obscurePasswordNotifier: obscurePasswordNotifier,
+                      passwordController: _passwordController,
+                      confirmPasswordController: _confirmPasswordController,
+                      obscurePasswordNotifier: _obscurePasswordNotifier,
                       obscureConfirmPasswordNotifier:
-                          obscureConfirmPasswordNotifier,
+                          _obscureConfirmPasswordNotifier,
                       onSubmitted: onSignUp,
                     ),
                     const SizedBox(height: 28),

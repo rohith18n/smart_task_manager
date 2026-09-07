@@ -28,7 +28,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       final db = await databaseHelper.database;
       List<Map<String, dynamic>> results;
 
-      if (userId != null && userId.isNotEmpty && userId != 'guest_user') {
+      if (userId != null && userId.isNotEmpty) {
         results = await db.query(
           AppConstants.tasksTableName,
           where: 'sync_action != ? AND user_id = ?',
@@ -38,8 +38,8 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       } else {
         results = await db.query(
           AppConstants.tasksTableName,
-          where: 'sync_action != ? AND (user_id = ? OR user_id IS NULL OR user_id = "")',
-          whereArgs: [AppConstants.syncActionDelete, 'guest_user'],
+          where: 'sync_action != ?',
+          whereArgs: [AppConstants.syncActionDelete],
           orderBy: 'created_at DESC',
         );
       }
@@ -144,7 +144,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       final db = await databaseHelper.database;
       List<Map<String, dynamic>> results;
 
-      if (userId != null && userId.isNotEmpty && userId != 'guest_user') {
+      if (userId != null && userId.isNotEmpty) {
         results = await db.query(
           AppConstants.tasksTableName,
           where: 'is_synced = ? AND user_id = ?',
@@ -153,8 +153,8 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       } else {
         results = await db.query(
           AppConstants.tasksTableName,
-          where: 'is_synced = ? AND (user_id = ? OR user_id IS NULL OR user_id = "")',
-          whereArgs: [0, 'guest_user'],
+          where: 'is_synced = ?',
+          whereArgs: [0],
         );
       }
       return results.map((map) => TaskModel.fromSqflite(map)).toList();

@@ -45,23 +45,23 @@ class AppRouter {
       routes: [
         GoRoute(
           path: '/login',
-          builder: (context, state) => const LoginScreen(),
+          builder: (context, state) => LoginScreen(),
         ),
         GoRoute(
           path: '/register',
-          builder: (context, state) => const RegisterScreen(),
+          builder: (context, state) => RegisterScreen(),
         ),
         GoRoute(
           path: '/',
-          builder: (context, state) => const TaskListScreen(),
+          builder: (context, state) => TaskListScreen(),
         ),
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const ProfileScreen(),
+          builder: (context, state) => ProfileScreen(),
         ),
         GoRoute(
           path: '/add',
-          builder: (context, state) => const TaskFormScreen(),
+          builder: (context, state) => TaskFormScreen(),
         ),
         GoRoute(
           path: '/edit/:id',

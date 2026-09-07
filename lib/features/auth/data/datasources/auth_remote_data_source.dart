@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/error/exceptions.dart';
@@ -75,6 +76,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserEntity> signInWithEmail(String email, String password) async {
+    developer.log('🔑 [AUTH] Attempting sign in as $email', name: 'Auth');
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_guestModeKey, false);
@@ -87,10 +89,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (user == null) {
         throw const AuthException('Authentication failed. No user returned.');
       }
+      developer.log(
+        '✅ [AUTH SUCCESS] Logged in: ${user.email} (UID: ${user.uid})',
+        name: 'Auth',
+      );
       return _mapFirebaseUser(user)!;
     } on FirebaseAuthException catch (e) {
+      developer.log(
+        '❌ [AUTH ERROR] ${e.code}: ${e.message}',
+        name: 'Auth',
+        error: e,
+      );
       throw AuthException(_mapFirebaseAuthError(e), e.code);
     } catch (e) {
+      developer.log('❌ [AUTH ERROR] $e', name: 'Auth', error: e);
       if (e is AppException) rethrow;
       throw AuthException('Failed to sign in: $e');
     }
@@ -102,6 +114,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String password, {
     String? displayName,
   }) async {
+    developer.log('📝 [AUTH] Attempting registration for $email', name: 'Auth');
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_guestModeKey, false);
@@ -118,10 +131,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         await user.updateDisplayName(displayName);
         await user.reload();
       }
+      developer.log(
+        '✅ [AUTH SUCCESS] Registered: ${user.email} (UID: ${user.uid})',
+        name: 'Auth',
+      );
       return _mapFirebaseUser(_firebaseAuth.currentUser ?? user)!;
     } on FirebaseAuthException catch (e) {
+      developer.log(
+        '❌ [AUTH ERROR] ${e.code}: ${e.message}',
+        name: 'Auth',
+        error: e,
+      );
       throw AuthException(_mapFirebaseAuthError(e), e.code);
     } catch (e) {
+      developer.log('❌ [AUTH ERROR] $e', name: 'Auth', error: e);
       if (e is AppException) rethrow;
       throw AuthException('Failed to create account: $e');
     }

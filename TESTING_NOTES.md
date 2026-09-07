@@ -12,51 +12,47 @@ If you encounter any difficulties, need assistance, or have questions while test
 
 ## 🔑 Ways to Log In & Test
 
-### Option 1: Continue as Guest (1-Tap Instant Entry)
-- Tap the **"Continue as Guest"** button on the login screen.
-- Instantly enters the app without entering any credentials.
-- Works 100% offline or online.
-
----
-
-### Option 2: Pre-configured Test Account
+### Option 1: Pre-configured Test Account
 Use the following test credentials on the **Sign In** screen:
 - **Email**: `test@gmail.com`
 - **Password**: `test@123`
 
 ---
 
-### Option 3: Register a New Account
+### Option 2: Register a New Account
 - Tap **"Sign Up"** at the bottom of the login screen.
-- Enter any name, dummy email (e.g., `tester1@example.com`), and password (min 6 characters).
-- Creates an isolated user session where all tasks added are uniquely tied to that account.
+- Enter any name, email (e.g., `tester1@example.com`), and password (min 6 characters).
+- Creates an isolated user session where all tasks and Firestore profile preferences (like dark mode) are uniquely tied to that account.
 
 ---
 
 ## 🧪 Key Features to Test
 
-1. **Task CRUD Operations**:
-   - **Create**: Tap the `+` button in the bottom right, enter title, description, select priority, choose due date & time, and save.
-   - **Real-Time Validation**: Try entering short text (<3 chars for title, <5 chars for description) to see dynamic validation.
-   - **Update / Toggle**: Tap any task to view details (with full copyable Task UUID), edit fields, or tap the checkmark icon to toggle completion.
-   - **Delete**: Swipe or delete a task from the details/list view.
+1. **Firebase Authentication & Firestore User Profile**:
+   - Clean Email & Password Sign In and Sign Up with real-time validation and mapped error messages.
+   - User profile stored in Firestore under `users/{userId}` with theme preference auto-applied.
+   - Profile management screen under account menu.
 
-2. **Search, Filter & Sort**:
-   - Search tasks by title or description in real time.
-   - Filter by status (*All, Pending, Completed*) and priority (*Low, Medium, High, Urgent*).
-   - Sort by due date, priority, or creation date.
+2. **Task CRUD Operations (REST API + Local Cache)**:
+   - **Create**: Tap the `+` button in the bottom right, enter title, description, select priority, choose category and due date, and save.
+   - **Optimistic UI Updates**: Created, updated, and deleted tasks immediately reflect in the UI with automatic rollback on network failure.
+   - **Update / Toggle**: Tap any task to view details, edit fields, or tap the circular checkbox to toggle completion.
+   - **Delete**: Swipe to delete or delete directly from the task detail screen.
 
-3. **Offline Mode & Conflict Resolution**:
-   - Turn on Airplane mode / disconnect internet.
-   - Create or edit tasks locally (notice the **"Offline / Queued"** status badge in the App Bar).
-   - Turn internet back on (observe automatic background sync and status switching to **"Synced"**).
+3. **Debounced Search, Client-Side Filtering & Sorting**:
+   - Search tasks by title with 300ms debouncing to prevent excessive queries and smooth performance.
+   - Filter by status (*All, Pending, Completed*), priority, and category.
+   - Sort by due date (earliest/latest), priority (highest/lowest), and created date.
+   - Infinite scroll pagination using `skip` & `limit` with pull-to-refresh.
 
-4. **Theme Switcher**:
-   - Tap the Sun/Moon icon in the App Bar on any screen to switch between WhatsApp-style Dark Mode and Light Mode.
+4. **Offline-First Strategy & Error Modeling**:
+   - SQLite local caching via `sqflite`.
+   - Offline banner appears when connection is lost; tasks remain fully readable and writable offline.
+   - Automatic sync and conflict resolution (Last-Write-Wins) when connection restores.
+   - Typed error modeling (`AppException`, `NetworkException`, `ServerException`, `CacheException`, `AuthException`) with context-aware error views.
 
-5. **Push & Local Notifications**:
-   - Create a new task to receive an instant local task confirmation notification.
-   - Or tap the **User Avatar** (top right) > select **"Test Notification"** to trigger a test alert.
+5. **Theme Switcher**:
+   - Toggle between Material 3 Light Mode and Dark Mode via the App Bar or Profile screen. Dark mode preference is persisted locally and in Firestore.
 
 ---
 

@@ -103,7 +103,7 @@ void main() {
             BlocProvider<AuthBloc>.value(value: mockAuthBloc),
             BlocProvider<TaskBloc>.value(value: mockTaskBloc),
           ],
-          child: const TaskFormScreen(),
+          child: TaskFormScreen(),
         ),
       ),
     );
@@ -116,6 +116,32 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Please enter a task title'), findsOneWidget);
+  });
+
+  testWidgets('TaskFormScreen allows typing title and description', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
+            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            BlocProvider<TaskBloc>.value(value: mockTaskBloc),
+          ],
+          child: TaskFormScreen(),
+        ),
+      ),
+    );
+
+    final textFields = find.byType(TextFormField);
+    final titleField = textFields.first;
+    final descField = textFields.last;
+
+    await tester.enterText(titleField, 'New Unit Test Task');
+    await tester.enterText(descField, 'This is a description');
+    await tester.pump();
+
+    expect(find.text('New Unit Test Task'), findsOneWidget);
+    expect(find.text('This is a description'), findsOneWidget);
   });
 
   testWidgets('ErrorViewWidget renders NetworkException correctly', (tester) async {

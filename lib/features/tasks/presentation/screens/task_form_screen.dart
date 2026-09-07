@@ -11,6 +11,7 @@ import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import '../cubit/task_form_cubit.dart';
 import '../widgets/task_category_selector.dart';
+import '../widgets/task_completed_toggle.dart';
 import '../widgets/task_date_time_picker.dart';
 import '../widgets/task_form_submit_button.dart';
 import '../widgets/task_form_text_fields.dart';
@@ -18,8 +19,13 @@ import '../widgets/task_priority_selector.dart';
 
 class TaskFormScreen extends StatelessWidget {
   final TaskEntity? task;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController;
+  final TextEditingController _descController;
 
-  const TaskFormScreen({super.key, this.task});
+  TaskFormScreen({super.key, this.task})
+      : _titleController = TextEditingController(text: task?.title ?? ''),
+        _descController = TextEditingController(text: task?.description ?? '');
 
   bool get isEditing => task != null;
 
@@ -27,7 +33,13 @@ class TaskFormScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => TaskFormCubit(initialTask: task),
-      child: _TaskFormContent(task: task, isEditing: isEditing),
+      child: _TaskFormContent(
+        task: task,
+        isEditing: isEditing,
+        formKey: _formKey,
+        titleController: _titleController,
+        descController: _descController,
+      ),
     );
   }
 }
@@ -35,17 +47,21 @@ class TaskFormScreen extends StatelessWidget {
 class _TaskFormContent extends StatelessWidget {
   final TaskEntity? task;
   final bool isEditing;
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> formKey;
+  final TextEditingController titleController;
+  final TextEditingController descController;
 
-  _TaskFormContent({required this.task, required this.isEditing});
+  const _TaskFormContent({
+    required this.task,
+    required this.isEditing,
+    required this.formKey,
+    required this.titleController,
+    required this.descController,
+  });
 
-  void _saveTask(
-    BuildContext context,
-    TextEditingController titleController,
-    TextEditingController descController,
-  ) {
+  void _saveTask(BuildContext context) {
     final formCubit = context.read<TaskFormCubit>();
-    if (!_formKey.currentState!.validate() ||
+    if (!formKey.currentState!.validate() ||
         !formCubit.validateDueDate(isEditing)) {
       return;
     }
@@ -105,9 +121,6 @@ class _TaskFormContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleController = TextEditingController(text: task?.title ?? '');
-    final descController =
-        TextEditingController(text: task?.description ?? '');
 
     return Scaffold(
       backgroundColor:
@@ -147,7 +160,7 @@ class _TaskFormContent extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Form(
-                key: _formKey,
+                key: formKey,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +188,7 @@ class _TaskFormContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     if (isEditing) ...[
-                      _CompletedToggle(
+                      TaskCompletedToggle(
                         isCompleted: formState.isCompleted,
                         onChanged: cubit.setIsCompleted,
                       ),
@@ -184,8 +197,7 @@ class _TaskFormContent extends StatelessWidget {
                     TaskFormSubmitButton(
                       isEditing: isEditing,
                       isSaving: formState.isSaving,
-                      onPressed: () =>
-                          _saveTask(context, titleController, descController),
+                      onPressed: () => _saveTask(context),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -194,49 +206,6 @@ class _TaskFormContent extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _CompletedToggle extends StatelessWidget {
-  final bool isCompleted;
-  final ValueChanged<bool> onChanged;
-
-  const _CompletedToggle({
-    required this.isCompleted,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkInputFill : AppColors.lightInputFill,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Mark as Completed',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
-            ),
-          ),
-          Switch(
-            value: isCompleted,
-            activeThumbColor: AppColors.primary,
-            onChanged: onChanged,
-          ),
-        ],
       ),
     );
   }

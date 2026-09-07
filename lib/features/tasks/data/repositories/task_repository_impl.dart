@@ -29,7 +29,7 @@ class TaskRepositoryImpl implements TaskRepository {
   }) async {
     final isOnline = await networkInfo.isConnected;
 
-    if (isOnline && userId != null && userId.isNotEmpty && userId != 'guest_user') {
+    if (isOnline && userId != null && userId.isNotEmpty) {
       try {
         final remoteTasks = await remoteDataSource.getTasks(
           userId: userId,
@@ -68,7 +68,7 @@ class TaskRepositoryImpl implements TaskRepository {
 
     final preparedTask = task.copyWith(id: tempId);
 
-    if (isOnline && task.userId.isNotEmpty && task.userId != 'guest_user') {
+    if (isOnline && task.userId.isNotEmpty) {
       try {
         final model = TaskModel.fromEntity(preparedTask);
         final createdRemote = await remoteDataSource.createTask(model);
@@ -83,7 +83,7 @@ class TaskRepositoryImpl implements TaskRepository {
       }
     }
 
-    // Offline or guest mode
+    // Offline or queued mode
     final localModel = TaskModel.fromEntity(preparedTask).copyWith(
       isSynced: false,
       syncAction: AppConstants.syncActionInsert,
@@ -97,7 +97,7 @@ class TaskRepositoryImpl implements TaskRepository {
     final isOnline = await networkInfo.isConnected;
     final updatedTask = task.copyWith(updatedAt: DateTime.now());
 
-    if (isOnline && task.id > 0 && task.userId.isNotEmpty && task.userId != 'guest_user') {
+    if (isOnline && task.id > 0 && task.userId.isNotEmpty) {
       try {
         final model = TaskModel.fromEntity(updatedTask);
         final updatedRemote = await remoteDataSource.updateTask(model);
@@ -125,7 +125,7 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<void> deleteTask(int id, {String? userId}) async {
     final isOnline = await networkInfo.isConnected;
 
-    if (isOnline && id > 0 && userId != null && userId.isNotEmpty && userId != 'guest_user') {
+    if (isOnline && id > 0 && userId != null && userId.isNotEmpty) {
       try {
         await remoteDataSource.deleteTask(id, userId: userId);
         await localDataSource.hardDeleteTask(id);
@@ -153,7 +153,7 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<void> syncPendingTasks({String? userId}) async {
     if (!await networkInfo.isConnected) return;
-    if (userId == null || userId.isEmpty || userId == 'guest_user') return;
+    if (userId == null || userId.isEmpty) return;
 
     try {
       final pendingTasks = await localDataSource.getPendingSyncTasks(userId: userId);
