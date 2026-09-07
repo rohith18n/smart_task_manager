@@ -5,7 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
-import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../profile/presentation/bloc/profile_bloc.dart';
+import '../../../profile/presentation/bloc/profile_state.dart';
 import 'sync_status_indicator.dart';
 
 class TaskListAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -48,14 +49,30 @@ class TaskListAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: () => context.read<ThemeCubit>().toggleTheme(),
           ),
         ),
-        BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, authState) {
-            final user = authState.user;
-            final initial = user?.displayName?.isNotEmpty == true
-                ? user!.displayName![0].toUpperCase()
-                : (user?.email?.isNotEmpty == true
-                    ? user!.email![0].toUpperCase()
-                    : 'U');
+        BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, profileState) {
+            final authUser = context.watch<AuthBloc>().state.user;
+            final profile = profileState.profile;
+
+            final displayName = (profile != null &&
+                    profile.name.isNotEmpty &&
+                    profile.name != 'User')
+                ? profile.name
+                : (authUser?.displayName?.isNotEmpty == true
+                    ? authUser!.displayName!
+                    : (profile?.email.isNotEmpty == true
+                        ? profile!.email.split('@').first
+                        : (authUser?.email?.isNotEmpty == true
+                            ? authUser!.email!.split('@').first
+                            : 'User')));
+
+            final email = (profile != null && profile.email.isNotEmpty)
+                ? profile.email
+                : (authUser?.email ?? '');
+
+            final photoUrl = profile?.photoUrl;
+            final initial =
+                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
             return PopupMenuButton<String>(
               tooltip: 'Account',
@@ -66,49 +83,82 @@ class TaskListAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
               offset: const Offset(0, 48),
               icon: CircleAvatar(
-                radius: 15,
+                radius: 16,
                 backgroundColor: AppColors.primary,
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+                backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                    ? NetworkImage(photoUrl)
+                    : null,
+                child: (photoUrl != null && photoUrl.isNotEmpty)
+                    ? null
+                    : Text(
+                        initial,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
               itemBuilder: (ctx) => [
                 PopupMenuItem<String>(
                   enabled: false,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        user?.displayName ??
-                            (user?.email != null
-                                ? user!.email!.split('@').first
-                                : 'User'),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.primary,
+                        backgroundImage:
+                            (photoUrl != null && photoUrl.isNotEmpty)
+                                ? NetworkImage(photoUrl)
+                                : null,
+                        child: (photoUrl != null && photoUrl.isNotEmpty)
+                            ? null
+                            : Text(
+                                initial,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            if (email.isNotEmpty)
+                              Text(
+                                email,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      if (user?.email != null)
-                        Text(
-                          user!.email!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                          ),
-                        ),
-                      const Divider(height: 16),
                     ],
                   ),
                 ),
+                const PopupMenuDivider(),
                 PopupMenuItem<String>(
                   value: 'profile',
                   child: Row(

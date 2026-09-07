@@ -7,6 +7,8 @@ import 'package:smart_task_manager/core/theme/theme_cubit.dart';
 import 'package:smart_task_manager/features/auth/domain/entities/user_entity.dart';
 import 'package:smart_task_manager/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:smart_task_manager/features/auth/presentation/bloc/auth_state.dart';
+import 'package:smart_task_manager/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:smart_task_manager/features/profile/presentation/bloc/profile_state.dart';
 import 'package:smart_task_manager/features/tasks/domain/usecases/create_task_usecase.dart';
 import 'package:smart_task_manager/features/tasks/domain/usecases/delete_task_usecase.dart';
 import 'package:smart_task_manager/features/tasks/domain/usecases/get_tasks_usecase.dart';
@@ -24,16 +26,19 @@ class MockToggleTaskCompletionUseCase extends Mock implements ToggleTaskCompleti
 class MockSyncTasksUseCase extends Mock implements SyncTasksUseCase {}
 class MockNetworkInfo extends Mock implements NetworkInfo {}
 class MockAuthBloc extends Mock implements AuthBloc {}
+class MockProfileBloc extends Mock implements ProfileBloc {}
 
 void main() {
   late MockGetTasksUseCase mockGetTasksUseCase;
   late MockNetworkInfo mockNetworkInfo;
   late MockAuthBloc mockAuthBloc;
+  late MockProfileBloc mockProfileBloc;
 
   setUp(() {
     mockGetTasksUseCase = MockGetTasksUseCase();
     mockNetworkInfo = MockNetworkInfo();
     mockAuthBloc = MockAuthBloc();
+    mockProfileBloc = MockProfileBloc();
 
     when(() => mockNetworkInfo.isConnected).thenAnswer((_) async => true);
     when(() => mockNetworkInfo.onConnectivityChanged)
@@ -45,6 +50,8 @@ void main() {
       user: UserEntity(id: 'test-user-1', email: 'test@example.com', displayName: 'Test User'),
     ));
     when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockProfileBloc.state).thenReturn(const ProfileState());
+    when(() => mockProfileBloc.stream).thenAnswer((_) => const Stream.empty());
   });
 
   testWidgets('Smart Task Manager App smoke test', (WidgetTester tester) async {
@@ -63,9 +70,10 @@ void main() {
         providers: [
           BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
           BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
           BlocProvider<TaskBloc>.value(value: taskBloc),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: TaskListScreen(),
         ),
       ),

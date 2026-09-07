@@ -16,6 +16,8 @@ import 'package:smart_task_manager/features/tasks/domain/usecases/get_tasks_usec
 import 'package:smart_task_manager/features/tasks/domain/usecases/sync_tasks_usecase.dart';
 import 'package:smart_task_manager/features/tasks/domain/usecases/toggle_task_completion_usecase.dart';
 import 'package:smart_task_manager/features/tasks/domain/usecases/update_task_usecase.dart';
+import 'package:smart_task_manager/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:smart_task_manager/features/profile/presentation/bloc/profile_state.dart';
 import 'package:smart_task_manager/features/tasks/presentation/bloc/task_bloc.dart';
 import 'package:smart_task_manager/features/tasks/presentation/bloc/task_event.dart';
 import 'package:smart_task_manager/features/tasks/presentation/screens/task_list_screen.dart';
@@ -28,12 +30,14 @@ class MockToggleTaskCompletionUseCase extends Mock implements ToggleTaskCompleti
 class MockSyncTasksUseCase extends Mock implements SyncTasksUseCase {}
 class MockNetworkInfo extends Mock implements NetworkInfo {}
 class MockAuthBloc extends Mock implements AuthBloc {}
+class MockProfileBloc extends Mock implements ProfileBloc {}
 
 void main() {
   late MockGetTasksUseCase mockGetTasksUseCase;
   late MockSyncTasksUseCase mockSyncTasksUseCase;
   late MockNetworkInfo mockNetworkInfo;
   late MockAuthBloc mockAuthBloc;
+  late MockProfileBloc mockProfileBloc;
 
   final sampleTask = TaskEntity(
     id: 1,
@@ -51,6 +55,7 @@ void main() {
     mockSyncTasksUseCase = MockSyncTasksUseCase();
     mockNetworkInfo = MockNetworkInfo();
     mockAuthBloc = MockAuthBloc();
+    mockProfileBloc = MockProfileBloc();
 
     when(() => mockNetworkInfo.isConnected).thenAnswer((_) async => true);
     when(() => mockNetworkInfo.onConnectivityChanged)
@@ -71,6 +76,8 @@ void main() {
       ),
     ));
     when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockProfileBloc.state).thenReturn(const ProfileState());
+    when(() => mockProfileBloc.stream).thenAnswer((_) => const Stream.empty());
   });
 
   testWidgets('RefreshIndicator and sync calls get tasks API with userId',
@@ -92,9 +99,10 @@ void main() {
         providers: [
           BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
           BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
           BlocProvider<TaskBloc>.value(value: taskBloc),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: TaskListScreen(),
         ),
       ),

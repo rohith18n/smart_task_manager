@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/user_profile_entity.dart';
 import '../../domain/usecases/profile_usecases.dart';
@@ -124,6 +125,20 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             photoUrl: event.photoUrl,
             removePhoto: event.removePhoto,
           );
+        } catch (_) {}
+
+        try {
+          final firebaseUser = FirebaseAuth.instance.currentUser;
+          if (firebaseUser != null && firebaseUser.uid == event.userId) {
+            if (event.name != null && event.name!.isNotEmpty) {
+              await firebaseUser.updateDisplayName(event.name);
+            }
+            if (event.removePhoto) {
+              await firebaseUser.updatePhotoURL(null);
+            } else if (event.photoUrl != null) {
+              await firebaseUser.updatePhotoURL(event.photoUrl);
+            }
+          }
         } catch (_) {}
       }
 
