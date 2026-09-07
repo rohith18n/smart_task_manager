@@ -20,16 +20,32 @@ class AuthHeaderWidget extends StatelessWidget {
         const SizedBox(height: 8),
         Center(
           child: Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.task_alt_rounded,
-              size: 40,
-              color: Colors.white,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/icons/app_icon.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: AppColors.primary,
+                  child: const Icon(
+                    Icons.task_alt_rounded,
+                    size: 44,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
