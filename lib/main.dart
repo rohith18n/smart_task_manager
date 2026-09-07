@@ -39,6 +39,10 @@ void main() async {
   // Initialize Dependency Injection container
   await initServiceLocator();
 
+  // Trigger initial auth check
+  sl<AuthBloc>().add(const AuthCheckRequestedEvent());
+  final router = AppRouter.createRouter(sl<AuthBloc>());
+
   // Initialize Notifications
   try {
     await sl<NotificationService>().initialize();
@@ -46,33 +50,23 @@ void main() async {
     debugPrint('Notification service init notice: $e');
   }
 
-  runApp(const MyApp());
+  runApp(MyApp(router: router));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class MyApp extends StatelessWidget {
+  final dynamic router;
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  late final AuthBloc _authBloc;
-  late final dynamic _router;
-
-  @override
-  void initState() {
-    super.initState();
-    _authBloc = sl<AuthBloc>()..add(const AuthCheckRequestedEvent());
-    _router = AppRouter.createRouter(_authBloc);
-  }
+  const MyApp({super.key, this.router});
 
   @override
   Widget build(BuildContext context) {
+    final authBloc = sl<AuthBloc>();
+    final routerConfig = router ?? AppRouter.createRouter(authBloc);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<ThemeCubit>.value(value: sl<ThemeCubit>()),
-        BlocProvider<AuthBloc>.value(value: _authBloc),
+        BlocProvider<AuthBloc>.value(value: authBloc),
         BlocProvider<ProfileBloc>(create: (_) => sl<ProfileBloc>()),
         BlocProvider<TaskBloc>(
           create: (_) => sl<TaskBloc>()..add(const LoadTasksEvent()),
@@ -125,7 +119,7 @@ class _MyAppState extends State<MyApp> {
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: themeMode,
-              routerConfig: _router,
+              routerConfig: routerConfig,
             );
           },
         ),

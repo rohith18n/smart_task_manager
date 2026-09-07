@@ -1,6 +1,6 @@
-# 📝 EthicFin TaskManager – Testing & Evaluation Notes
+# 📝 Smart Task Manager – Testing & Evaluation Notes
 
-Welcome to **EthicFin TaskManager**! Below are the instructions and test credentials to help you test and evaluate all features of the application.
+Welcome to **Smart Task Manager**! Below are the instructions and test credentials to help you test and evaluate all features of the application.
 
 ---
 

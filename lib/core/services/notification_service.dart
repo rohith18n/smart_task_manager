@@ -77,7 +77,7 @@ class NotificationService {
         if (notification != null) {
           showNotification(
             id: message.hashCode,
-            title: notification.title ?? 'EthicFin Task Update',
+            title: notification.title ?? 'Smart Task Update',
             body: notification.body ?? '',
             payload: message.data.toString(),
           );

@@ -35,7 +35,7 @@ void main() {
 
   const testUser = UserEntity(
     id: 'user-123',
-    email: 'rohith@ethicfin.com',
+    email: 'rohith@example.com',
     displayName: 'Rohith',
   );
 

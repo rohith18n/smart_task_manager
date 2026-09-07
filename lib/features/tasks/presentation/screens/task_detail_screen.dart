@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -10,6 +9,10 @@ import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import '../bloc/task_state.dart';
 import '../widgets/priority_badge_widget.dart';
+import '../widgets/task_detail_description_card.dart';
+import '../widgets/task_detail_dialogs.dart';
+import '../widgets/task_detail_metadata_section.dart';
+import '../widgets/task_detail_status_banner.dart';
 
 class TaskDetailScreen extends StatelessWidget {
   final dynamic taskId;
@@ -38,7 +41,8 @@ class TaskDetailScreen extends StatelessWidget {
 
         if (task == null) {
           return Scaffold(
-            backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+            backgroundColor:
+                isDark ? AppColors.darkBackground : AppColors.lightBackground,
             appBar: AppBar(title: const Text('Task Details')),
             body: const Center(
               child: Text('Task not found.'),
@@ -46,46 +50,51 @@ class TaskDetailScreen extends StatelessWidget {
           );
         }
 
-        final isOverdue = DateFormatter.isOverdue(task.dueDate, task.isCompleted);
+        final isOverdue =
+            DateFormatter.isOverdue(task.dueDate, task.isCompleted);
 
         return Scaffold(
-          backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+          backgroundColor:
+              isDark ? AppColors.darkBackground : AppColors.lightBackground,
           appBar: AppBar(
-            backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+            backgroundColor:
+                isDark ? AppColors.darkBackground : AppColors.lightBackground,
             title: Text(
               'Task Details',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
               ),
             ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 tooltip: 'Edit Task',
-                onPressed: () {
-                  context.push('/edit/${task!.id}', extra: task);
-                },
+                onPressed: () => context.push('/edit/${task!.id}', extra: task),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                icon: const Icon(Icons.delete_outline_rounded,
+                    color: AppColors.error),
                 tooltip: 'Delete Task',
-                onPressed: () => _confirmDelete(context, task!),
+                onPressed: () => TaskDetailDialogs.confirmDelete(context, task!),
               ),
               BlocBuilder<ThemeCubit, ThemeMode>(
-                builder: (context, themeMode) {
-                  return IconButton(
-                    tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-                    icon: Icon(
-                      isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                    ),
-                    onPressed: () {
-                      context.read<ThemeCubit>().toggleTheme();
-                    },
-                  );
-                },
+                builder: (context, _) => IconButton(
+                  tooltip:
+                      isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                  icon: Icon(
+                    isDark
+                        ? Icons.light_mode_outlined
+                        : Icons.dark_mode_outlined,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                  ),
+                  onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+                ),
               ),
               const SizedBox(width: 8),
             ],
@@ -95,60 +104,8 @@ class TaskDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: task.isCompleted
-                        ? (isDark ? AppColors.chipSelectedBg : AppColors.lightChipSelectedBg)
-                        : (isOverdue
-                            ? (isDark ? AppColors.priorityUrgentBg : AppColors.priorityUrgentLightBg)
-                            : (isDark ? AppColors.darkInputFill : AppColors.lightInputFill)),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: task.isCompleted
-                          ? (isDark ? Colors.transparent : AppColors.lightChipSelectedBorder)
-                          : (isOverdue ? AppColors.error.withAlpha(80) : Colors.transparent),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        task.isCompleted
-                            ? Icons.check_circle_rounded
-                            : (isOverdue
-                                ? Icons.warning_amber_rounded
-                                : Icons.schedule_rounded),
-                        color: task.isCompleted
-                            ? (isDark ? AppColors.chipSelectedText : AppColors.lightChipSelectedText)
-                            : (isOverdue ? AppColors.error : AppColors.primary),
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          task.isCompleted
-                              ? 'This task has been completed'
-                              : (isOverdue
-                                  ? 'This task is overdue!'
-                                  : 'This task is pending completion'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: task.isCompleted
-                                ? (isDark ? AppColors.chipSelectedText : AppColors.lightChipSelectedText)
-                                : (isOverdue
-                                    ? AppColors.error
-                                    : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                TaskDetailStatusBanner(task: task, isOverdue: isOverdue),
                 const SizedBox(height: 24),
-
-                // Title
                 Text(
                   task.title,
                   style: TextStyle(
@@ -163,13 +120,11 @@ class TaskDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Category & Priority Row
                 Row(
                   children: [
-                    // Category Chip
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: isDark
                             ? task.category.color.withValues(alpha: 0.2)
@@ -179,11 +134,8 @@ class TaskDetailScreen extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            task.category.icon,
-                            size: 14,
-                            color: task.category.color,
-                          ),
+                          Icon(task.category.icon,
+                              size: 14, color: task.category.color),
                           const SizedBox(width: 6),
                           Text(
                             task.category.displayName,
@@ -201,204 +153,24 @@ class TaskDetailScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-
-                // Description
-                Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkInputFill : AppColors.lightInputFill,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    task.description != null && task.description!.isNotEmpty
-                        ? task.description!
-                        : 'No description provided for this task.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                      fontStyle: (task.description == null || task.description!.isEmpty)
-                          ? FontStyle.italic
-                          : FontStyle.normal,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightTextPrimary,
-                    ),
-                  ),
-                ),
+                TaskDetailDescriptionCard(description: task.description),
                 const SizedBox(height: 24),
-
-                // Metadata Section
-                Text(
-                  'Task Metadata',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkInputFill : AppColors.lightInputFill,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      if (task.dueDate != null) ...[
-                        _buildMetadataRow(
-                          context: context,
-                          icon: Icons.calendar_today_rounded,
-                          label: 'Due Date',
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                DateFormatter.formatRelative(task.dueDate),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: isOverdue ? AppColors.error : AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Divider(
-                          height: 18,
-                          color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-                        ),
-                      ],
-                      _buildMetadataRow(
-                        context: context,
-                        icon: Icons.add_circle_outline_rounded,
-                        label: 'Created Date',
-                        value: DateFormatter.formatDateTime(task.createdAt),
-                      ),
-                      Divider(
-                        height: 18,
-                        color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-                      ),
-                      _buildMetadataRow(
-                        context: context,
-                        icon: Icons.update_rounded,
-                        label: 'Last Updated',
-                        value: DateFormatter.formatDateTime(task.updatedAt),
-                      ),
-                      Divider(
-                        height: 18,
-                        color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-                      ),
-                      _buildMetadataRow(
-                        context: context,
-                        icon: Icons.cloud_sync_rounded,
-                        label: 'Sync Status',
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              task.isSynced && task.syncAction == 'NONE'
-                                  ? 'Synced'
-                                  : 'Pending sync',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: task.isSynced && task.syncAction == 'NONE'
-                                    ? AppColors.synced
-                                    : AppColors.warning,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              task.isSynced && task.syncAction == 'NONE'
-                                  ? Icons.check_circle_rounded
-                                  : Icons.cloud_upload_outlined,
-                              size: 16,
-                              color: task.isSynced && task.syncAction == 'NONE'
-                                  ? AppColors.synced
-                                  : AppColors.warning,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Divider(
-                        height: 18,
-                        color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.fingerprint_rounded,
-                              size: 18,
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Task ID',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '#${task.id}',
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.copy_rounded, size: 16),
-                              onPressed: () {
-                                Clipboard.setData(ClipboardData(text: task!.id.toString()));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Task ID copied to clipboard'),
-                                    duration: Duration(seconds: 1),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                TaskDetailMetadataSection(task: task, isOverdue: isOverdue),
                 const SizedBox(height: 32),
-
-                // Primary Action Button
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: task.isCompleted
-                          ? (isDark ? AppColors.darkInputFill : AppColors.lightInputFill)
+                          ? (isDark
+                              ? AppColors.darkInputFill
+                              : AppColors.lightInputFill)
                           : AppColors.primary,
                       foregroundColor: task.isCompleted
-                          ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
+                          ? (isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary)
                           : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
@@ -410,7 +182,9 @@ class TaskDetailScreen extends StatelessWidget {
                           : Icons.check_circle_outline_rounded,
                     ),
                     label: Text(
-                      task.isCompleted ? 'Mark as Pending' : 'Mark as Completed',
+                      task.isCompleted
+                          ? 'Mark as Pending'
+                          : 'Mark as Completed',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -439,78 +213,6 @@ class TaskDetailScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildMetadataRow({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    String? value,
-    Widget? trailing,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const Spacer(),
-        if (trailing != null)
-          trailing
-        else if (value != null)
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-            ),
-          ),
-      ],
-    );
-  }
-
-  void _confirmDelete(BuildContext context, TaskEntity task) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        title: const Text('Delete Task'),
-        content: Text('Are you sure you want to delete "${task.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<TaskBloc>().add(DeleteTaskEvent(task.id));
-              context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Task "${task.title}" deleted')),
-              );
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 }

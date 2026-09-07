@@ -7,6 +7,7 @@ import '../../domain/entities/task_entity.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import 'priority_badge_widget.dart';
+import 'task_card_avatar.dart';
 
 class TaskCardWidget extends StatelessWidget {
   final TaskEntity task;
@@ -44,9 +45,7 @@ class TaskCardWidget extends StatelessWidget {
           ],
         ),
       ),
-      confirmDismiss: (direction) async {
-        return await _showDeleteConfirmation(context);
-      },
+      confirmDismiss: (_) => _showDeleteConfirmation(context),
       onDismissed: (_) {
         context.read<TaskBloc>().add(DeleteTaskEvent(task.id));
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,58 +63,28 @@ class TaskCardWidget extends StatelessWidget {
         onTap: () => context.push('/task/${task.id}', extra: task),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+            color:
+                isDark ? AppColors.darkBackground : AppColors.lightBackground,
           ),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Left: Circular Status & Priority Avatar
-                    GestureDetector(
-                      onTap: () {
-                        context
-                            .read<TaskBloc>()
-                            .add(ToggleTaskCompletionEvent(task.id));
-                      },
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: task.isCompleted
-                              ? (isDark ? AppColors.chipSelectedBg : AppColors.lightChipSelectedBg)
-                              : (isDark ? AppColors.darkInputFill : AppColors.lightInputFill),
-                          border: Border.all(
-                            color: task.isCompleted
-                                ? AppColors.primary
-                                : task.priority.color,
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            task.isCompleted
-                                ? Icons.check_rounded
-                                : Icons.assignment_outlined,
-                            size: 22,
-                            color: task.isCompleted
-                                ? AppColors.primary
-                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                          ),
-                        ),
-                      ),
+                    TaskCardAvatar(
+                      task: task,
+                      onTap: () => context
+                          .read<TaskBloc>()
+                          .add(ToggleTaskCompletionEvent(task.id)),
                     ),
                     const SizedBox(width: 14),
-
-                    // Middle Column: Title & Description Subtitle
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Row 1: Title and Time
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -142,7 +111,9 @@ class TaskCardWidget extends StatelessWidget {
                                   DateFormatter.formatRelative(task.dueDate),
                                   style: TextStyle(
                                     fontSize: 12,
-                                    fontWeight: isOverdue ? FontWeight.w700 : FontWeight.w500,
+                                    fontWeight: isOverdue
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                     color: isOverdue
                                         ? AppColors.error
                                         : (isDark
@@ -153,9 +124,8 @@ class TaskCardWidget extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 4),
-
-                          // Row 2: Subtitle description
-                          if (task.description != null && task.description!.isNotEmpty)
+                          if (task.description != null &&
+                              task.description!.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 6),
                               child: Text(
@@ -170,27 +140,23 @@ class TaskCardWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-
-                          // Row 3: Category badge & Priority badge
                           Row(
                             children: [
-                              // Category Chip
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? task.category.color.withValues(alpha: 0.15)
+                                      ? task.category.color
+                                          .withValues(alpha: 0.15)
                                       : task.category.backgroundColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      task.category.icon,
-                                      size: 12,
-                                      color: task.category.color,
-                                    ),
+                                    Icon(task.category.icon,
+                                        size: 12, color: task.category.color),
                                     const SizedBox(width: 4),
                                     Text(
                                       task.category.displayName,
@@ -204,13 +170,12 @@ class TaskCardWidget extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 6),
-
                               PriorityBadgeWidget(
                                 priority: task.priority,
                                 isCompact: true,
                               ),
-
-                              if (!task.isSynced || task.syncAction != 'NONE') ...[
+                              if (!task.isSynced ||
+                                  task.syncAction != 'NONE') ...[
                                 const SizedBox(width: 6),
                                 const Icon(
                                   Icons.cloud_upload_outlined,
@@ -226,13 +191,13 @@ class TaskCardWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              // Thin divider with left indent
               Padding(
                 padding: const EdgeInsets.only(left: 76),
                 child: Divider(
                   height: 1,
                   thickness: 0.7,
-                  color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+                  color:
+                      isDark ? AppColors.darkDivider : AppColors.lightDivider,
                 ),
               ),
             ],
@@ -248,7 +213,8 @@ class TaskCardWidget extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightSurface,
         title: const Text('Delete Task'),
         content: Text('Are you sure you want to delete "${task.title}"?'),
         actions: [
