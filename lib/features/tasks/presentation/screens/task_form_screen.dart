@@ -5,6 +5,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
+import '../../../../core/widgets/app_feedback.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/task_bloc.dart';
@@ -105,14 +106,12 @@ class _TaskFormContent extends StatelessWidget {
       sl<NotificationService>().scheduleTaskDueReminder(newTask);
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isEditing
-              ? 'Task updated successfully'
-              : 'Task created successfully',
-        ),
-      ),
+    AppFeedback.showSuccess(
+      context,
+      title: isEditing ? 'Task Updated' : 'Task Created',
+      message: isEditing
+          ? '"${titleController.text.trim()}" has been updated.'
+          : '"${titleController.text.trim()}" is scheduled.',
     );
 
     context.pop();

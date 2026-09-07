@@ -57,7 +57,7 @@ Future<void> initServiceLocator() async {
   sl.registerLazySingleton(() => SignInAnonymouslyUseCase(sl()));
   sl.registerLazySingleton(() => SignOutUseCase(sl()));
 
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => AuthBloc(
       getCurrentUserUseCase: sl(),
       watchAuthStateUseCase: sl(),
@@ -79,7 +79,7 @@ Future<void> initServiceLocator() async {
   sl.registerLazySingleton(() => SaveUserProfileUseCase(sl()));
   sl.registerLazySingleton(() => UpdateUserProfileUseCase(sl()));
 
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => ProfileBloc(
       getUserProfileUseCase: sl(),
       saveUserProfileUseCase: sl(),
@@ -115,7 +115,7 @@ Future<void> initServiceLocator() async {
 
   // Cubits & Blocs
   sl.registerLazySingleton(() => ThemeCubit(profileRepository: sl()));
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => TaskBloc(
       getTasksUseCase: sl(),
       createTaskUseCase: sl(),

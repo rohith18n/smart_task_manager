@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/widgets/app_feedback.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -47,16 +48,16 @@ class TaskCardWidget extends StatelessWidget {
       ),
       confirmDismiss: (_) => _showDeleteConfirmation(context),
       onDismissed: (_) {
+        final deletedTask = task;
         context.read<TaskBloc>().add(DeleteTaskEvent(task.id));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Task "${task.title}" deleted'),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          title: 'Task Deleted',
+          message: '"${deletedTask.title}" has been removed.',
+          actionLabel: 'Undo',
+          onAction: () {
+            context.read<TaskBloc>().add(CreateTaskEvent(deletedTask));
+          },
         );
       },
       child: InkWell(

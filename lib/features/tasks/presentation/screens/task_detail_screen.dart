@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/widgets/app_feedback.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -191,19 +192,25 @@ class TaskDetailScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
+                      if (task == null) return;
+                      final currentTask = task;
+                      final wasCompleted = currentTask.isCompleted;
                       context
                           .read<TaskBloc>()
-                          .add(ToggleTaskCompletionEvent(task!.id));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            task.isCompleted
-                                ? 'Task marked as pending'
-                                : 'Task marked as completed!',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                          .add(ToggleTaskCompletionEvent(currentTask.id));
+                      if (!wasCompleted) {
+                        AppFeedback.showSuccess(
+                          context,
+                          title: 'Task Completed!',
+                          message: 'Great job completing "${currentTask.title}".',
+                        );
+                      } else {
+                        AppFeedback.showInfo(
+                          context,
+                          title: 'Task Reopened',
+                          message: '"${currentTask.title}" marked as pending.',
+                        );
+                      }
                     },
                   ),
                 ),

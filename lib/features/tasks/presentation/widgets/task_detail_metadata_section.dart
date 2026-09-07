@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/widgets/app_feedback.dart';
 import '../../domain/entities/task_entity.dart';
 
 class TaskDetailMetadataSection extends StatelessWidget {
@@ -152,11 +153,11 @@ class TaskDetailMetadataSection extends StatelessWidget {
                       onPressed: () {
                         Clipboard.setData(
                             ClipboardData(text: task.id.toString()));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Task ID copied to clipboard'),
-                            duration: Duration(seconds: 1),
-                          ),
+                        AppFeedback.showInfo(
+                          context,
+                          title: 'Copied to Clipboard',
+                          message: 'Task ID #${task.id} has been copied.',
+                          icon: Icons.content_copy_rounded,
                         );
                       },
                     ),

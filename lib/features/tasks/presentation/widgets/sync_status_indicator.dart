@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_feedback.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import '../bloc/task_state.dart';
@@ -43,21 +45,21 @@ class SyncStatusIndicator extends StatelessWidget {
           child: InkWell(
             onTap: () {
               if (state.isOnline && !state.isSyncing) {
-                context.read<TaskBloc>().add(const SyncTasksEvent());
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Syncing tasks...'),
-                    duration: Duration(seconds: 1),
-                  ),
+                final authUser = context.read<AuthBloc>().state.user;
+                context
+                    .read<TaskBloc>()
+                    .add(SyncTasksEvent(authUser?.id));
+                AppFeedback.showSync(
+                  context,
+                  title: 'Syncing Tasks',
+                  message: 'Calling GET API and synchronizing with cloud database...',
                 );
               } else if (!state.isOnline) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'You are offline. ${state.pendingSyncCount} changes queued.',
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
+                AppFeedback.showWarning(
+                  context,
+                  title: 'Offline Mode',
+                  message:
+                      'You are offline. ${state.pendingSyncCount} changes will automatically sync once reconnected.',
                 );
               }
             },

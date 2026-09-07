@@ -10,6 +10,8 @@ abstract class ProfileRemoteDataSource {
     required String userId,
     String? name,
     String? themeMode,
+    String? photoUrl,
+    bool removePhoto = false,
   });
 }
 
@@ -62,11 +64,18 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     required String userId,
     String? name,
     String? themeMode,
+    String? photoUrl,
+    bool removePhoto = false,
   }) async {
     try {
       final updates = <String, dynamic>{};
       if (name != null) updates['name'] = name;
       if (themeMode != null) updates['themeMode'] = themeMode;
+      if (removePhoto) {
+        updates['photoUrl'] = FieldValue.delete();
+      } else if (photoUrl != null) {
+        updates['photoUrl'] = photoUrl;
+      }
 
       if (updates.isNotEmpty) {
         await _userDoc(userId).set(updates, SetOptions(merge: true));

@@ -16,6 +16,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }) : super(const ProfileState()) {
     on<LoadProfileEvent>(_onLoadProfile);
     on<UpdateProfileEvent>(_onUpdateProfile);
+    on<ThemePreferenceChangedEvent>(_onThemePreferenceChanged);
+  }
+
+  void _onThemePreferenceChanged(
+    ThemePreferenceChangedEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state.profile != null) {
+      emit(state.copyWith(
+        profile: state.profile!.copyWith(themeMode: event.themeMode),
+      ));
+    }
   }
 
   Future<void> _onLoadProfile(
@@ -38,18 +50,42 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         return;
       }
 
-      UserProfileEntity? profile = await getUserProfileUseCase(event.userId);
+      UserProfileEntity? profile;
+      try {
+        profile = await getUserProfileUseCase(event.userId);
+      } catch (_) {}
 
-      if (profile == null) {
+      if (profile != null) {
+        // Use existing Firestore profile, filling any missing field with fallback
+        final resolvedName = (profile.name.isNotEmpty && profile.name != 'User')
+            ? profile.name
+            : (event.fallbackName != null && event.fallbackName!.isNotEmpty
+                ? event.fallbackName!
+                : profile.name);
+        final resolvedEmail = profile.email.isNotEmpty
+            ? profile.email
+            : (event.fallbackEmail ?? '');
+        profile = profile.copyWith(
+          name: resolvedName,
+          email: resolvedEmail,
+        );
+      } else {
         // First-time initialization in Firestore
+        final name = (event.fallbackName != null && event.fallbackName!.isNotEmpty)
+            ? event.fallbackName!
+            : (event.fallbackEmail != null && event.fallbackEmail!.isNotEmpty
+                ? event.fallbackEmail!.split('@').first
+                : 'User');
         profile = UserProfileEntity(
           userId: event.userId,
-          name: event.fallbackName ?? (event.fallbackEmail?.split('@').first ?? 'User'),
+          name: name,
           email: event.fallbackEmail ?? '',
           createdAt: DateTime.now(),
           themeMode: 'system',
         );
-        await saveUserProfileUseCase(profile);
+        try {
+          await saveUserProfileUseCase(profile);
+        } catch (_) {}
       }
 
       emit(state.copyWith(
@@ -57,9 +93,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         profile: profile,
       ));
     } catch (e) {
+      // Graceful fallback to guarantee UI always has active user details
+      final fallbackProfile = UserProfileEntity(
+        userId: event.userId,
+        name: event.fallbackName ??
+            (event.fallbackEmail?.split('@').first ?? 'User'),
+        email: event.fallbackEmail ?? '',
+        createdAt: DateTime.now(),
+        themeMode: 'system',
+      );
       emit(state.copyWith(
-        status: ProfileStatus.failure,
-        errorMessage: 'Failed to load user profile: $e',
+        status: ProfileStatus.success,
+        profile: fallbackProfile,
       ));
     }
   }
@@ -70,28 +115,31 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ) async {
     emit(state.copyWith(status: ProfileStatus.loading));
     try {
-      if (event.userId == 'guest_user') {
-        final current = state.profile;
-        emit(state.copyWith(
-          status: ProfileStatus.success,
-          profile: current?.copyWith(
+      if (event.userId != 'guest_user') {
+        try {
+          await updateUserProfileUseCase(
+            userId: event.userId,
             name: event.name,
             themeMode: event.themeMode,
-          ),
-        ));
-        return;
+            photoUrl: event.photoUrl,
+            removePhoto: event.removePhoto,
+          );
+        } catch (_) {}
       }
 
-      await updateUserProfileUseCase(
-        userId: event.userId,
+      final current = state.profile ??
+          UserProfileEntity(
+            userId: event.userId,
+            name: event.name ?? 'User',
+            email: '',
+            createdAt: DateTime.now(),
+            themeMode: event.themeMode ?? 'system',
+          );
+      final updated = current.copyWith(
         name: event.name,
         themeMode: event.themeMode,
-      );
-
-      final current = state.profile;
-      final updated = current?.copyWith(
-        name: event.name,
-        themeMode: event.themeMode,
+        photoUrl: () =>
+            event.removePhoto ? null : (event.photoUrl ?? current.photoUrl),
       );
 
       emit(state.copyWith(

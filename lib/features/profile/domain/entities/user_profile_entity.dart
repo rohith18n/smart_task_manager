@@ -6,6 +6,7 @@ class UserProfileEntity extends Equatable {
   final String email;
   final DateTime createdAt;
   final String themeMode; // 'light', 'dark', 'system'
+  final String? photoUrl;
 
   const UserProfileEntity({
     required this.userId,
@@ -13,6 +14,7 @@ class UserProfileEntity extends Equatable {
     required this.email,
     required this.createdAt,
     this.themeMode = 'system',
+    this.photoUrl,
   });
 
   UserProfileEntity copyWith({
@@ -21,6 +23,7 @@ class UserProfileEntity extends Equatable {
     String? email,
     DateTime? createdAt,
     String? themeMode,
+    String? Function()? photoUrl,
   }) {
     return UserProfileEntity(
       userId: userId ?? this.userId,
@@ -28,6 +31,7 @@ class UserProfileEntity extends Equatable {
       email: email ?? this.email,
       createdAt: createdAt ?? this.createdAt,
       themeMode: themeMode ?? this.themeMode,
+      photoUrl: photoUrl != null ? photoUrl() : this.photoUrl,
     );
   }
 
@@ -38,6 +42,7 @@ class UserProfileEntity extends Equatable {
       'email': email,
       'createdAt': createdAt.toIso8601String(),
       'themeMode': themeMode,
+      'photoUrl': photoUrl,
     };
   }
 
@@ -50,9 +55,10 @@ class UserProfileEntity extends Equatable {
           ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
       themeMode: map['themeMode'] as String? ?? 'system',
+      photoUrl: map['photoUrl'] as String?,
     );
   }
 
   @override
-  List<Object?> get props => [userId, name, email, createdAt, themeMode];
+  List<Object?> get props => [userId, name, email, createdAt, themeMode, photoUrl];
 }

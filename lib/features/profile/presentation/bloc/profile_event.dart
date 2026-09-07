@@ -22,13 +22,25 @@ class UpdateProfileEvent extends ProfileEvent {
   final String userId;
   final String? name;
   final String? themeMode;
+  final String? photoUrl;
+  final bool removePhoto;
 
   const UpdateProfileEvent({
     required this.userId,
     this.name,
     this.themeMode,
+    this.photoUrl,
+    this.removePhoto = false,
   });
 
   @override
-  List<Object?> get props => [userId, name, themeMode];
+  List<Object?> get props => [userId, name, themeMode, photoUrl, removePhoto];
+}
+
+class ThemePreferenceChangedEvent extends ProfileEvent {
+  final String themeMode;
+  const ThemePreferenceChangedEvent(this.themeMode);
+
+  @override
+  List<Object?> get props => [themeMode];
 }

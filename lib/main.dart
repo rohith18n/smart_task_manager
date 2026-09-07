@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -40,8 +41,31 @@ void main() async {
   await initServiceLocator();
 
   // Trigger initial auth check
-  sl<AuthBloc>().add(const AuthCheckRequestedEvent());
-  final router = AppRouter.createRouter(sl<AuthBloc>());
+  final authBloc = sl<AuthBloc>();
+  authBloc.add(const AuthCheckRequestedEvent());
+
+  // Warm start for cached Firebase session
+  final cachedUser = () {
+    try {
+      return FirebaseAuth.instance.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }();
+
+  if (cachedUser != null) {
+    final uid = cachedUser.uid;
+    sl<ApiClient>().setUserId(uid);
+    sl<ThemeCubit>().setUserId(uid);
+    sl<ProfileBloc>().add(LoadProfileEvent(
+      uid,
+      fallbackEmail: cachedUser.email,
+      fallbackName: cachedUser.displayName,
+    ));
+    sl<TaskBloc>().add(LoadTasksEvent(uid));
+  }
+
+  final router = AppRouter.createRouter(authBloc);
 
   // Initialize Notifications
   try {
@@ -67,27 +91,8 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<ThemeCubit>.value(value: sl<ThemeCubit>()),
         BlocProvider<AuthBloc>.value(value: authBloc),
-        BlocProvider<ProfileBloc>(
-          create: (_) {
-            final bloc = sl<ProfileBloc>();
-            final currentUser = authBloc.state.user;
-            if (authBloc.state.isAuthenticated && currentUser != null) {
-              bloc.add(LoadProfileEvent(
-                currentUser.id,
-                fallbackEmail: currentUser.email,
-                fallbackName: currentUser.displayName,
-              ));
-            }
-            return bloc;
-          },
-        ),
-        BlocProvider<TaskBloc>(
-          create: (_) {
-            final bloc = sl<TaskBloc>();
-            bloc.add(LoadTasksEvent(authBloc.state.user?.id));
-            return bloc;
-          },
-        ),
+        BlocProvider<ProfileBloc>.value(value: sl<ProfileBloc>()),
+        BlocProvider<TaskBloc>.value(value: sl<TaskBloc>()),
       ],
       child: MultiBlocListener(
         listeners: [
@@ -121,9 +126,10 @@ class MyApp extends StatelessWidget {
               // Auto-apply saved theme from Firestore user profile
               if (profileState.status == ProfileStatus.success &&
                   profileState.profile != null) {
-                context
-                    .read<ThemeCubit>()
-                    .setThemeFromString(profileState.profile!.themeMode);
+                context.read<ThemeCubit>().setThemeFromString(
+                      profileState.profile!.themeMode,
+                      persist: false,
+                    );
               }
             },
           ),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
+import '../../../../core/widgets/app_feedback.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -68,37 +69,17 @@ class RegisterScreen extends StatelessWidget {
         listener: (context, state) {
           if (state.status == AuthStatus.failure &&
               state.errorMessage != null) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.error_outline_rounded,
-                        color: Colors.white, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        state.errorMessage!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                duration: const Duration(seconds: 4),
-              ),
+            AppFeedback.showError(
+              context,
+              title: 'Registration Failed',
+              message: state.errorMessage!,
             );
           } else if (state.status == AuthStatus.authenticated) {
+            AppFeedback.showSuccess(
+              context,
+              title: 'Account Created',
+              message: 'Welcome to Smart Task Manager!',
+            );
             context.go('/');
           }
         },

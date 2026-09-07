@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
+import '../../features/profile/presentation/bloc/profile_bloc.dart';
+import '../../features/profile/presentation/bloc/profile_event.dart';
+import '../di/injection_container.dart';
 
 class ThemeCubit extends Cubit<ThemeMode> {
   static const String _prefKey = 'saved_theme_mode';
@@ -24,6 +28,21 @@ class ThemeCubit extends Cubit<ThemeMode> {
 
   void setUserId(String? userId) {
     _currentUserId = userId;
+  }
+
+  String? _getEffectiveUserId() {
+    if (_currentUserId != null &&
+        _currentUserId!.isNotEmpty &&
+        _currentUserId != 'guest_user') {
+      return _currentUserId;
+    }
+    try {
+      final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+      if (firebaseUid != null && firebaseUid.isNotEmpty) {
+        return firebaseUid;
+      }
+    } catch (_) {}
+    return null;
   }
 
   void toggleTheme() {
@@ -65,13 +84,20 @@ class ThemeCubit extends Cubit<ThemeMode> {
       await prefs.setString(_prefKey, modeStr);
     } catch (_) {}
 
-    if (_currentUserId != null &&
-        _currentUserId!.isNotEmpty &&
-        _currentUserId != 'guest_user') {
-      profileRepository?.updateUserProfile(
-        userId: _currentUserId!,
-        themeMode: modeStr,
-      );
+    final uid = _getEffectiveUserId();
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        await profileRepository?.updateUserProfile(
+          userId: uid,
+          themeMode: modeStr,
+        );
+      } catch (_) {}
     }
+
+    try {
+      if (sl.isRegistered<ProfileBloc>()) {
+        sl<ProfileBloc>().add(ThemePreferenceChangedEvent(modeStr));
+      }
+    } catch (_) {}
   }
 }

@@ -27,11 +27,15 @@ class UpdateUserProfileUseCase {
     required String userId,
     String? name,
     String? themeMode,
+    String? photoUrl,
+    bool removePhoto = false,
   }) async {
     await repository.updateUserProfile(
       userId: userId,
       name: name,
       themeMode: themeMode,
+      photoUrl: photoUrl,
+      removePhoto: removePhoto,
     );
   }
 }

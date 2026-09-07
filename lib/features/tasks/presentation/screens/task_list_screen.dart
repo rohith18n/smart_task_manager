@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_feedback.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import '../bloc/task_state.dart';
@@ -13,29 +17,98 @@ import '../widgets/task_card_widget.dart';
 import '../widgets/task_list_app_bar.dart';
 import '../widgets/task_list_offline_banner.dart';
 
-class TaskListScreen extends StatelessWidget {
+class TaskListScreen extends StatefulWidget {
+  const TaskListScreen({super.key});
+
+  @override
+  State<TaskListScreen> createState() => _TaskListScreenState();
+}
+
+class _TaskListScreenState extends State<TaskListScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  TaskListScreen({super.key});
+  @override
+  void initState() {
+    super.initState();
+    final authUser = context.read<AuthBloc>().state.user;
+    final firebaseUid = () {
+      try {
+        return FirebaseAuth.instance.currentUser?.uid;
+      } catch (_) {
+        return null;
+      }
+    }();
+    final uid = authUser?.id ?? firebaseUid;
+    final taskBloc = context.read<TaskBloc>();
+    if (taskBloc.state.status == TaskStatus.initial ||
+        taskBloc.state.allTasks.isEmpty) {
+      taskBloc.add(LoadTasksEvent(uid));
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRefresh(BuildContext context) async {
+    final authUser = context.read<AuthBloc>().state.user;
+    final firebaseUid = () {
+      try {
+        return FirebaseAuth.instance.currentUser?.uid;
+      } catch (_) {
+        return null;
+      }
+    }();
+    final uid = authUser?.id ?? firebaseUid;
+    final taskBloc = context.read<TaskBloc>();
+    taskBloc.add(SyncTasksEvent(uid));
+    try {
+      await taskBloc.stream
+          .firstWhere((state) => !state.isSyncing)
+          .timeout(const Duration(seconds: 4));
+    } catch (_) {
+      // Stream timeout fallback
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return BlocListener<TaskBloc, TaskState>(
-      listener: (context, state) {
-        if (state.status == TaskStatus.failure &&
-            state.errorMessage != null &&
-            state.allTasks.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: AppColors.error,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, authState) {
+            if (authState.isAuthenticated && authState.user != null) {
+              context.read<TaskBloc>().add(LoadTasksEvent(authState.user!.id));
+            }
+          },
+        ),
+        BlocListener<TaskBloc, TaskState>(
+          listener: (context, state) {
+            if (state.status == TaskStatus.failure &&
+                state.errorMessage != null &&
+                state.allTasks.isNotEmpty) {
+              AppFeedback.showError(
+                context,
+                title: 'Task Error',
+                message: state.errorMessage!,
+                actionLabel: 'Retry',
+                onAction: () {
+                  final authUser = context.read<AuthBloc>().state.user;
+                  context.read<TaskBloc>().add(
+                        LoadTasksEvent(
+                          authUser?.id ?? state.allTasks.firstOrNull?.userId,
+                        ),
+                      );
+                },
+              );
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor:
             isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -59,20 +132,52 @@ class TaskListScreen extends StatelessWidget {
 
                   if (state.status == TaskStatus.failure &&
                       state.allTasks.isEmpty) {
-                    return ErrorViewWidget(
-                      error: state.error,
-                      message: state.errorMessage ??
-                          'An error occurred while loading tasks.',
-                      onRetry: () {
-                        context.read<TaskBloc>().add(const LoadTasksEvent());
-                      },
+                    return RefreshIndicator(
+                      color: AppColors.primary,
+                      onRefresh: () => _handleRefresh(context),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: ErrorViewWidget(
+                              error: state.error,
+                              message: state.errorMessage ??
+                                  'An error occurred while loading tasks.',
+                              onRetry: () {
+                                final authUser =
+                                    context.read<AuthBloc>().state.user;
+                                context.read<TaskBloc>().add(
+                                      LoadTasksEvent(authUser?.id),
+                                    );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                     );
                   }
 
                   if (state.filteredTasks.isEmpty) {
-                    return EmptyTasksWidget(
-                      filter: state.filter,
-                      searchQuery: state.searchQuery,
+                    return RefreshIndicator(
+                      color: AppColors.primary,
+                      onRefresh: () => _handleRefresh(context),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: EmptyTasksWidget(
+                              filter: state.filter,
+                              searchQuery: state.searchQuery,
+                            ),
+                          ),
+                        ),
+                      ),
                     );
                   }
 
@@ -81,10 +186,7 @@ class TaskListScreen extends StatelessWidget {
 
                   return RefreshIndicator(
                     color: AppColors.primary,
-                    onRefresh: () async {
-                      context.read<TaskBloc>().add(const SyncTasksEvent());
-                      await Future.delayed(const Duration(milliseconds: 500));
-                    },
+                    onRefresh: () => _handleRefresh(context),
                     child: NotificationListener<ScrollNotification>(
                       onNotification: (notification) {
                         if (notification.metrics.pixels >=

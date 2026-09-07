@@ -105,11 +105,16 @@ class TaskQueryHandlers {
     SyncTasksEvent event,
     Emitter<TaskState> emit,
   ) async {
+    final uid = event.userId ?? bloc.currentUserId;
+    if (uid != null && uid.isNotEmpty) {
+      bloc.currentUserId = uid;
+    }
     emit(bloc.state.copyWith(isSyncing: true));
     try {
-      final uid = event.userId ?? bloc.currentUserId;
       await bloc.syncTasksUseCase(userId: uid);
-      final tasks = await bloc.getTasksUseCase(userId: uid, skip: 0, limit: 20);
+      final currentCount = bloc.state.allTasks.length;
+      final limit = currentCount > 20 ? currentCount : 20;
+      final tasks = await bloc.getTasksUseCase(userId: uid, skip: 0, limit: limit);
       final filtered = TaskFilterSorter.filterAndSort(
         tasks: tasks,
         query: bloc.state.searchQuery,

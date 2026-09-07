@@ -7,5 +7,7 @@ abstract class ProfileRepository {
     required String userId,
     String? name,
     String? themeMode,
+    String? photoUrl,
+    bool removePhoto = false,
   });
 }
