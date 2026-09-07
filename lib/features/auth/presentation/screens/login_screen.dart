@@ -32,11 +32,6 @@ class LoginScreen extends StatelessWidget {
       }
     }
 
-    void onGuestLogin() {
-      FocusScope.of(context).unfocus();
-      context.read<AuthBloc>().add(const SignInAnonymouslyEvent());
-    }
-
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -211,7 +206,6 @@ class LoginScreen extends StatelessWidget {
                     LoginActionsWidget(
                       isLoading: isLoading,
                       onSignIn: onSignIn,
-                      onGuestLogin: onGuestLogin,
                     ),
                     const SizedBox(height: 24),
                   ],

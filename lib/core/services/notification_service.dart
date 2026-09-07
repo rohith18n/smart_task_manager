@@ -111,6 +111,7 @@ class NotificationService {
   }
 
   Future<void> saveTokenToUser(String userId) async {
+    if (userId.isEmpty || userId == 'guest_user') return;
     try {
       final token = await getFCMToken();
       if (token != null) {

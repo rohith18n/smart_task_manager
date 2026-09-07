@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:smart_task_manager/core/di/injection_container.dart';
 import 'package:smart_task_manager/core/services/notification_service.dart';
+import 'package:smart_task_manager/core/error/exceptions.dart';
 import 'package:smart_task_manager/core/theme/theme_cubit.dart';
 import 'package:smart_task_manager/features/auth/domain/entities/user_entity.dart';
 import 'package:smart_task_manager/features/auth/presentation/bloc/auth_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:smart_task_manager/features/tasks/domain/enums/task_priority.dar
 import 'package:smart_task_manager/features/tasks/presentation/bloc/task_bloc.dart';
 import 'package:smart_task_manager/features/tasks/presentation/bloc/task_state.dart';
 import 'package:smart_task_manager/features/tasks/presentation/screens/task_form_screen.dart';
+import 'package:smart_task_manager/features/tasks/presentation/widgets/error_view_widget.dart';
 import 'package:smart_task_manager/features/tasks/presentation/widgets/priority_badge_widget.dart';
 import 'package:smart_task_manager/features/tasks/presentation/widgets/task_card_widget.dart';
 
@@ -114,5 +116,59 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Please enter a task title'), findsOneWidget);
+  });
+
+  testWidgets('ErrorViewWidget renders NetworkException correctly', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ErrorViewWidget(
+            error: const NetworkException(),
+            message: 'No internet',
+            onRetry: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('No Internet Connection'), findsOneWidget);
+    expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
+    expect(find.text('Retry Connection'), findsOneWidget);
+  });
+
+  testWidgets('ErrorViewWidget renders ServerException correctly', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ErrorViewWidget(
+            error: const ServerException('Database unavailable', 500),
+            message: 'Database unavailable',
+            onRetry: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Server Error'), findsOneWidget);
+    expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
+    expect(find.text('Database unavailable'), findsOneWidget);
+  });
+
+  testWidgets('ErrorViewWidget renders AuthException correctly', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ErrorViewWidget(
+            error: const AuthException('Session expired', 'expired'),
+            message: 'Session expired',
+            onRetry: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Authentication Error'), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

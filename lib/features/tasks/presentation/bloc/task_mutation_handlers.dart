@@ -1,10 +1,36 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/error/exceptions.dart';
+import '../../domain/entities/task_entity.dart';
 import 'task_bloc.dart';
 import 'task_event.dart';
 import 'task_filter_sorter.dart';
 import 'task_state.dart';
 
 class TaskMutationHandlers {
+  static void _emitRollback(
+    TaskBloc bloc,
+    Emitter<TaskState> emit,
+    List<TaskEntity> previousTasks,
+    Object error,
+    String prefix,
+  ) {
+    final appEx = error is AppException ? error : ServerException(error.toString());
+    emit(bloc.state.copyWith(
+      status: TaskStatus.failure,
+      error: () => appEx,
+      allTasks: previousTasks,
+      filteredTasks: TaskFilterSorter.filterAndSort(
+        tasks: previousTasks,
+        query: bloc.state.searchQuery,
+        filter: bloc.state.filter,
+        priority: bloc.state.priorityFilter,
+        category: bloc.state.categoryFilter,
+        sortBy: bloc.state.sortBy,
+      ),
+      errorMessage: '$prefix: $error',
+    ));
+  }
+
   static Future<void> onCreateTask(
     TaskBloc bloc,
     CreateTaskEvent event,
@@ -52,19 +78,7 @@ class TaskMutationHandlers {
         ),
       ));
     } catch (e) {
-      emit(bloc.state.copyWith(
-        status: TaskStatus.failure,
-        allTasks: previousTasks,
-        filteredTasks: TaskFilterSorter.filterAndSort(
-          tasks: previousTasks,
-          query: bloc.state.searchQuery,
-          filter: bloc.state.filter,
-          priority: bloc.state.priorityFilter,
-          category: bloc.state.categoryFilter,
-          sortBy: bloc.state.sortBy,
-        ),
-        errorMessage: 'Failed to create task: $e',
-      ));
+      _emitRollback(bloc, emit, previousTasks, e, 'Failed to create task');
     }
   }
 
@@ -110,19 +124,7 @@ class TaskMutationHandlers {
         ),
       ));
     } catch (e) {
-      emit(bloc.state.copyWith(
-        status: TaskStatus.failure,
-        allTasks: previousTasks,
-        filteredTasks: TaskFilterSorter.filterAndSort(
-          tasks: previousTasks,
-          query: bloc.state.searchQuery,
-          filter: bloc.state.filter,
-          priority: bloc.state.priorityFilter,
-          category: bloc.state.categoryFilter,
-          sortBy: bloc.state.sortBy,
-        ),
-        errorMessage: 'Failed to update task: $e',
-      ));
+      _emitRollback(bloc, emit, previousTasks, e, 'Failed to update task');
     }
   }
 
@@ -151,19 +153,7 @@ class TaskMutationHandlers {
     try {
       await bloc.deleteTaskUseCase(event.id, userId: bloc.currentUserId);
     } catch (e) {
-      emit(bloc.state.copyWith(
-        status: TaskStatus.failure,
-        allTasks: previousTasks,
-        filteredTasks: TaskFilterSorter.filterAndSort(
-          tasks: previousTasks,
-          query: bloc.state.searchQuery,
-          filter: bloc.state.filter,
-          priority: bloc.state.priorityFilter,
-          category: bloc.state.categoryFilter,
-          sortBy: bloc.state.sortBy,
-        ),
-        errorMessage: 'Failed to delete task: $e',
-      ));
+      _emitRollback(bloc, emit, previousTasks, e, 'Failed to delete task');
     }
   }
 
@@ -220,19 +210,7 @@ class TaskMutationHandlers {
         ));
       }
     } catch (e) {
-      emit(bloc.state.copyWith(
-        status: TaskStatus.failure,
-        allTasks: previousTasks,
-        filteredTasks: TaskFilterSorter.filterAndSort(
-          tasks: previousTasks,
-          query: bloc.state.searchQuery,
-          filter: bloc.state.filter,
-          priority: bloc.state.priorityFilter,
-          category: bloc.state.categoryFilter,
-          sortBy: bloc.state.sortBy,
-        ),
-        errorMessage: 'Failed to update task status: $e',
-      ));
+      _emitRollback(bloc, emit, previousTasks, e, 'Failed to update task status');
     }
   }
 }

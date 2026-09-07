@@ -58,6 +58,7 @@ class TaskListScreen extends StatelessWidget {
                   if (state.status == TaskStatus.failure &&
                       state.allTasks.isEmpty) {
                     return ErrorViewWidget(
+                      error: state.error,
                       message: state.errorMessage ??
                           'An error occurred while loading tasks.',
                       onRetry: () {

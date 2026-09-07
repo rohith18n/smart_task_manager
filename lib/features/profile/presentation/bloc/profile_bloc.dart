@@ -24,6 +24,20 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ) async {
     emit(state.copyWith(status: ProfileStatus.loading));
     try {
+      if (event.userId == 'guest_user') {
+        emit(state.copyWith(
+          status: ProfileStatus.success,
+          profile: UserProfileEntity(
+            userId: 'guest_user',
+            name: event.fallbackName ?? 'Guest User',
+            email: event.fallbackEmail ?? '',
+            createdAt: DateTime.now(),
+            themeMode: 'system',
+          ),
+        ));
+        return;
+      }
+
       UserProfileEntity? profile = await getUserProfileUseCase(event.userId);
 
       if (profile == null) {
@@ -56,6 +70,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ) async {
     emit(state.copyWith(status: ProfileStatus.loading));
     try {
+      if (event.userId == 'guest_user') {
+        final current = state.profile;
+        emit(state.copyWith(
+          status: ProfileStatus.success,
+          profile: current?.copyWith(
+            name: event.name,
+            themeMode: event.themeMode,
+          ),
+        ));
+        return;
+      }
+
       await updateUserProfileUseCase(
         userId: event.userId,
         name: event.name,

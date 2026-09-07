@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/enums/task_category.dart';
 import '../../domain/enums/task_filter.dart';
@@ -20,6 +21,7 @@ class TaskState extends Equatable {
   final bool isSyncing;
   final bool isLoadingMore;
   final bool hasReachedMax;
+  final AppException? error;
   final String? errorMessage;
   final DateTime? lastSyncedAt;
 
@@ -36,6 +38,7 @@ class TaskState extends Equatable {
     this.isSyncing = false,
     this.isLoadingMore = false,
     this.hasReachedMax = false,
+    this.error,
     this.errorMessage,
     this.lastSyncedAt,
   });
@@ -53,6 +56,7 @@ class TaskState extends Equatable {
     bool? isSyncing,
     bool? isLoadingMore,
     bool? hasReachedMax,
+    AppException? Function()? error,
     String? errorMessage,
     DateTime? lastSyncedAt,
   }) {
@@ -69,6 +73,7 @@ class TaskState extends Equatable {
       isSyncing: isSyncing ?? this.isSyncing,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+      error: error != null ? error() : this.error,
       errorMessage: errorMessage ?? this.errorMessage,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
@@ -95,6 +100,7 @@ class TaskState extends Equatable {
         isSyncing,
         isLoadingMore,
         hasReachedMax,
+        error,
         errorMessage,
         lastSyncedAt,
       ];

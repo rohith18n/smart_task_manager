@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/error/exceptions.dart';
 import 'task_bloc.dart';
 import 'task_event.dart';
 import 'task_filter_sorter.dart';
@@ -13,6 +14,7 @@ class TaskQueryHandlers {
     bloc.currentUserId = event.userId;
     emit(bloc.state.copyWith(
       status: TaskStatus.loading,
+      error: () => null,
       errorMessage: null,
       hasReachedMax: false,
     ));
@@ -32,13 +34,22 @@ class TaskQueryHandlers {
       );
       emit(bloc.state.copyWith(
         status: TaskStatus.success,
+        error: () => null,
+        errorMessage: null,
         allTasks: tasks,
         filteredTasks: filtered,
         hasReachedMax: tasks.length < 10,
       ));
+    } on AppException catch (e) {
+      emit(bloc.state.copyWith(
+        status: TaskStatus.failure,
+        error: () => e,
+        errorMessage: e.message,
+      ));
     } catch (e) {
       emit(bloc.state.copyWith(
         status: TaskStatus.failure,
+        error: () => ServerException(e.toString()),
         errorMessage: 'Failed to load tasks: $e',
       ));
     }

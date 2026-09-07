@@ -67,9 +67,26 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<ThemeCubit>.value(value: sl<ThemeCubit>()),
         BlocProvider<AuthBloc>.value(value: authBloc),
-        BlocProvider<ProfileBloc>(create: (_) => sl<ProfileBloc>()),
+        BlocProvider<ProfileBloc>(
+          create: (_) {
+            final bloc = sl<ProfileBloc>();
+            final currentUser = authBloc.state.user;
+            if (authBloc.state.isAuthenticated && currentUser != null) {
+              bloc.add(LoadProfileEvent(
+                currentUser.id,
+                fallbackEmail: currentUser.email,
+                fallbackName: currentUser.displayName,
+              ));
+            }
+            return bloc;
+          },
+        ),
         BlocProvider<TaskBloc>(
-          create: (_) => sl<TaskBloc>()..add(const LoadTasksEvent()),
+          create: (_) {
+            final bloc = sl<TaskBloc>();
+            bloc.add(LoadTasksEvent(authBloc.state.user?.id));
+            return bloc;
+          },
         ),
       ],
       child: MultiBlocListener(

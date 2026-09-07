@@ -5,13 +5,11 @@ import '../../../../core/theme/app_colors.dart';
 class LoginActionsWidget extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onSignIn;
-  final VoidCallback onGuestLogin;
 
   const LoginActionsWidget({
     super.key,
     required this.isLoading,
     required this.onSignIn,
-    required this.onGuestLogin,
   });
 
   @override
@@ -48,32 +46,6 @@ class LoginActionsWidget extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 50,
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : onGuestLogin,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
-              side: BorderSide(
-                color: isDark
-                    ? AppColors.darkDivider
-                    : AppColors.lightChipUnselectedBorder,
-                width: 1.2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-            ),
-            icon: const Icon(Icons.person_outline_rounded, size: 20),
-            label: const Text(
-              'Continue as Guest',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
           ),
         ),
         const SizedBox(height: 20),

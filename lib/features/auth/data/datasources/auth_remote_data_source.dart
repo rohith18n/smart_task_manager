@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/error/exceptions.dart';
@@ -15,35 +16,44 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final FirebaseAuth _firebaseAuth;
   static const String _guestModeKey = 'is_guest_session';
+  final StreamController<UserEntity?> _authController =
+      StreamController<UserEntity?>.broadcast();
 
   AuthRemoteDataSourceImpl({FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance {
+    _initAuthStream();
+  }
 
-  @override
-  Stream<UserEntity?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().asyncMap((user) async {
-      if (user != null) {
-        return _mapFirebaseUser(user);
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final isGuest = prefs.getBool(_guestModeKey) ?? false;
-      if (isGuest) {
-        return const UserEntity(
-          id: 'guest_user',
-          displayName: 'Guest User',
-          isAnonymous: true,
-        );
-      }
-      return null;
-    });
+  void _initAuthStream() {
+    _firebaseAuth.authStateChanges().listen(
+      (user) async {
+        if (user != null) {
+          _authController.add(_mapFirebaseUser(user));
+        } else {
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            final isGuest = prefs.getBool(_guestModeKey) ?? false;
+            if (isGuest) {
+              _authController.add(const UserEntity(
+                id: 'guest_user',
+                displayName: 'Guest User',
+                isAnonymous: true,
+              ));
+              return;
+            }
+          } catch (_) {}
+          _authController.add(null);
+        }
+      },
+      onError: (_) => _authController.add(null),
+    );
   }
 
   @override
+  Stream<UserEntity?> get authStateChanges => _authController.stream;
+
+  @override
   Future<UserEntity?> getCurrentUser() async {
-    final user = _firebaseAuth.currentUser;
-    if (user != null) {
-      return _mapFirebaseUser(user);
-    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final isGuest = prefs.getBool(_guestModeKey) ?? false;
@@ -55,6 +65,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         );
       }
     } catch (_) {}
+
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      return _mapFirebaseUser(user);
+    }
     return null;
   }
 
@@ -70,14 +85,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final user = credential.user;
       if (user == null) {
-        throw const ServerException('Authentication failed. No user returned.');
+        throw const AuthException('Authentication failed. No user returned.');
       }
       return _mapFirebaseUser(user)!;
     } on FirebaseAuthException catch (e) {
-      throw ServerException(_mapFirebaseAuthError(e));
+      throw AuthException(_mapFirebaseAuthError(e), e.code);
     } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException('Failed to sign in: $e');
+      if (e is AppException) rethrow;
+      throw AuthException('Failed to sign in: $e');
     }
   }
 
@@ -97,7 +112,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final user = credential.user;
       if (user == null) {
-        throw const ServerException('Registration failed. No user returned.');
+        throw const AuthException('Registration failed. No user returned.');
       }
       if (displayName != null && displayName.isNotEmpty) {
         await user.updateDisplayName(displayName);
@@ -105,39 +120,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return _mapFirebaseUser(_firebaseAuth.currentUser ?? user)!;
     } on FirebaseAuthException catch (e) {
-      throw ServerException(_mapFirebaseAuthError(e));
+      throw AuthException(_mapFirebaseAuthError(e), e.code);
     } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException('Failed to create account: $e');
+      if (e is AppException) rethrow;
+      throw AuthException('Failed to create account: $e');
     }
   }
 
   @override
   Future<UserEntity> signInAnonymously() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_guestModeKey, true);
-
-      final credential = await _firebaseAuth.signInAnonymously();
-      final user = credential.user;
-      if (user != null) {
-        return _mapFirebaseUser(user)!;
-      }
-    } catch (e) {
-      // Fallback for offline guest session
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_guestModeKey, true);
-      return const UserEntity(
-        id: 'guest_user',
-        displayName: 'Guest User',
-        isAnonymous: true,
-      );
-    }
-    return const UserEntity(
+    const guestUser = UserEntity(
       id: 'guest_user',
       displayName: 'Guest User',
       isAnonymous: true,
     );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_guestModeKey, true);
+    } catch (_) {}
+    _authController.add(guestUser);
+    return guestUser;
   }
 
   @override
@@ -145,8 +147,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_guestModeKey, false);
-      await _firebaseAuth.signOut();
+      _authController.add(null);
+      await _firebaseAuth.signOut().catchError((_) {});
     } catch (e) {
+      _authController.add(null);
       throw ServerException('Failed to sign out: $e');
     }
   }

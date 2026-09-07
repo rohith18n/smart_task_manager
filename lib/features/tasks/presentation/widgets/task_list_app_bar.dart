@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/di/injection_container.dart';
-import '../../../../core/services/notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -87,8 +85,8 @@ class TaskListAppBar extends StatelessWidget implements PreferredSizeWidget {
                     children: [
                       Text(
                         user?.displayName ??
-                            (user?.isAnonymous == true
-                                ? 'Guest User'
+                            (user?.email != null
+                                ? user!.email!.split('@').first
                                 : 'User'),
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
@@ -135,30 +133,6 @@ class TaskListAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
-                PopupMenuItem<String>(
-                  value: 'test_notification',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.notifications_active_outlined,
-                        size: 18,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightTextPrimary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Test Notification',
-                        style: TextStyle(
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const PopupMenuItem<String>(
                   value: 'logout',
                   child: Row(
@@ -180,18 +154,6 @@ class TaskListAppBar extends StatelessWidget implements PreferredSizeWidget {
               onSelected: (value) {
                 if (value == 'profile') {
                   context.push('/profile');
-                } else if (value == 'test_notification') {
-                  sl<NotificationService>().showNotification(
-                    id: DateTime.now().millisecondsSinceEpoch % 100000,
-                    title: '🔔 Smart Task Reminder',
-                    body: 'Your notification system is working perfectly!',
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Test notification triggered!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
                 } else if (value == 'logout') {
                   context.read<AuthBloc>().add(const SignOutEvent());
                 }
